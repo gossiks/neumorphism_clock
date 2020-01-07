@@ -4,12 +4,12 @@
 
 import 'dart:io';
 
-import 'package:flutter_clock_helper/customizer.dart';
-import 'package:flutter_clock_helper/model.dart';
+import 'package:digital_clock/neumorphism_clock.dart';
+import 'package:digital_clock/neumorphism_helper/theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-import 'neuomorphism_clock.dart';
+import 'package:flutter_clock_helper/customizer.dart';
+import 'package:flutter_clock_helper/model.dart';
 
 void main() {
   // A temporary measure until Platform supports web and TargetPlatform supports
@@ -29,6 +29,6 @@ void main() {
   // For more information, see the flutter_clock_helper package.
   //
   // Your job is to edit [DigitalClock], or replace it with your
-  // own clock widget. (Look in neuomorphism_clock.dart for more details!)
-  runApp(ClockCustomizer((ClockModel model) => DigitalClock(model)));
+  // own clock widget. (Look in neumorphism_clock.dart for more details!)
+  runApp(ClockCustomizer((ClockModel model) => NeumorphismTheme(child: NeuomorphismClock(model))));
 }
