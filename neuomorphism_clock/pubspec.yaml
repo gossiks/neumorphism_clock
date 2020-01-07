@@ -11,12 +11,17 @@ dependencies:
   flutter_clock_helper:
     path: ../flutter_clock_helper
   cupertino_icons: ^0.1.2
+  neumorphism:
+    path: ../../neumorphism
+  text_to_path_maker: ^0.5.7
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
 flutter:
+  assets:
+    - asset/
   uses-material-design: true
   fonts:
     - family: PressStart2P
