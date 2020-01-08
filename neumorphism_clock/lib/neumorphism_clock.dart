@@ -11,6 +11,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_clock_helper/model.dart';
 import 'package:intl/intl.dart';
 import 'package:neumorphism/neumorphism_lib.dart';
+import 'package:rxdart/transformers.dart';
 import 'package:text_to_path_maker/text_to_path_maker.dart';
 
 enum _Element {
@@ -88,13 +89,7 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
 //    );
     final hour = DateFormat(widget.model.is24HourFormat ? 'HH' : 'hh').format(_dateTime);
     final minute = DateFormat('mm').format(_dateTime);
-
-    clockConditionStreamController.add(ClockCondition(
-      widget.digitPath[(_dateTime.second - _dateTime.second % 10) ~/ 10],
-      widget.digitPath[_dateTime.second % 10],
-      widget.digitPath[(_dateTime.second - _dateTime.second % 10) ~/ 10],
-      widget.digitPath[_dateTime.second % 10],
-    ));
+    clockConditionStreamController.add(extractClockCondition(widget.digitPath, _dateTime));
     // Update once per second, but make sure to do it at the beginning of each
     // new second, so that the clock is accurate.
     _timer = Timer(
@@ -103,11 +98,21 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
     );
   }
 
+  ClockCondition extractClockCondition(List<Path> pathList, DateTime dateTime) {
+    return ClockCondition(
+      pathList[(dateTime.second - dateTime.second % 10) ~/ 10],
+      pathList[dateTime.second % 10],
+      pathList[(dateTime.second - dateTime.second % 10) ~/ 10],
+      pathList[dateTime.second % 10],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).brightness == Brightness.light ? _lightTheme : _darkTheme;
     final hour = DateFormat(widget.model.is24HourFormat ? 'HH' : 'hh').format(_dateTime);
     final minute = DateFormat('mm').format(_dateTime);
+
     final fontSize = MediaQuery.of(context).size.width / 3.5;
     final offset = -fontSize / 7;
     final defaultStyle = TextStyle(
@@ -122,8 +127,9 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
         ),
       ],
     );
-
-    return ClockPad(clockConditionStreamController.stream);
+    return Container(
+        color: NeumorphismTheme.of(context).surfaceColor,
+        child: ClockPad(clockConditionStreamController.stream.asBroadcastStream().map((v)=>[v,v])));
   }
 }
 
@@ -131,7 +137,7 @@ Path generatePathForCharacter(PMFont myFont, int character) =>
     myFont.generatePathForCharacter(character); // TODO move to hepler
 
 class ClockPad extends StatefulWidget {
-  Stream<ClockCondition> clockConditionStream;
+  Stream<List<ClockCondition>> clockConditionStream;
 
   ClockPad(this.clockConditionStream);
 
@@ -140,18 +146,9 @@ class ClockPad extends StatefulWidget {
 }
 
 class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
-  AnimationController animationController;
-
-  @override
-  void initState() {
-    super.initState();
-    animationController = AnimationController(vsync: this, duration: Duration(seconds: 10));
-    animationController.forward();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<ClockCondition>(
+    return StreamBuilder<List<ClockCondition>>(
         stream: widget.clockConditionStream,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
@@ -162,15 +159,9 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   clockCell(
-                      child: AnimatedNeumorphismUp(
-                          animationController: animationController,
-                          clipPath: snapshot.data.firstSymbol,
-                          elementElevation: 11)),
+                      child: buildAnimatedNeumorphism(snapshot.data[1].firstSymbol, snapshot.data[0].firstSymbol)),
                   clockCell(
-                      child: AnimatedNeumorphismUp(
-                          animationController: animationController,
-                          clipPath: snapshot.data.secondSymbol,
-                          elementElevation: 11)),
+                      child: buildAnimatedNeumorphism(snapshot.data[1].secondSymbol, snapshot.data[0].secondSymbol)),
                   clockCell(
                       child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -203,15 +194,9 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
                     ],
                   )),
                   clockCell(
-                      child: AnimatedNeumorphismUp(
-                          animationController: animationController,
-                          clipPath: snapshot.data.thirdSymbol,
-                          elementElevation: 11)),
+                      child: buildAnimatedNeumorphism(snapshot.data[1].thirdSymbol, snapshot.data[0].thirdSymbol)),
                   clockCell(
-                      child: AnimatedNeumorphismUp(
-                          animationController: animationController,
-                          clipPath: snapshot.data.forthSymbol,
-                          elementElevation: 11)),
+                      child: buildAnimatedNeumorphism(snapshot.data[1].forthSymbol, snapshot.data[0].forthSymbol)),
                 ],
               ),
             );
@@ -219,6 +204,10 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
             return Container();
           }
         });
+  }
+
+  AnimatedNeumorphismUp buildAnimatedNeumorphism(Path symbolTo, Path symbolFrom) {
+    return AnimatedNeumorphismUp(clipPathTo: symbolTo, clipPathFrom: symbolFrom, elementElevation: 3);
   }
 
   Widget clockCell({Widget child, int flex = 2}) => Flexible(flex: flex, child: child);
@@ -238,13 +227,10 @@ Neumorphism buildNeumorphismSymbol({Path clipPath, final double elementElevation
 }
 
 class AnimatedNeumorphismUp extends StatefulWidget {
-  final Path clipPath;
+  final Path clipPathTo, clipPathFrom;
   final double elementElevation;
 
-  final AnimationController animationController;
-
-  AnimatedNeumorphismUp(
-      {Key key, @required this.animationController, @required this.clipPath, this.elementElevation = 10})
+  AnimatedNeumorphismUp({Key key, @required this.clipPathTo, @required this.clipPathFrom, this.elementElevation = 10})
       : super(key: key = GlobalKey());
 
   @override
@@ -252,16 +238,28 @@ class AnimatedNeumorphismUp extends StatefulWidget {
 }
 
 class _AnimatedNeumorphismUpState extends State<AnimatedNeumorphismUp> with SingleTickerProviderStateMixin {
-  Animation<double> ascendAnimation;
+  Animation<double> ascendAnimation, descendAnimation;
 
-    AnimationController s;
+  AnimationController s;
+
   @override
   void initState() {
     super.initState();
-    s = AnimationController(vsync: this, duration: Duration(milliseconds: 500));
-    ascendAnimation = Tween<double>(begin: 0, end: widget.elementElevation).animate(s);
-    s.forward();
+    s = AnimationController(vsync: this, duration: Duration(milliseconds: 990));
+    ascendAnimation = Tween<double>(begin: widget.elementElevation, end: 0)
+        .animate(CurvedAnimation(parent: s, curve: Curves.bounceInOut));
+    startAnimation();
+  }
 
+  Future startAnimation() async {
+    await s.forward();
+    await s.reverse();
+  }
+
+  @override
+  void dispose() {
+    s.dispose();
+    super.dispose();
   }
 
   @override
@@ -269,10 +267,11 @@ class _AnimatedNeumorphismUpState extends State<AnimatedNeumorphismUp> with Sing
     return AnimatedBuilder(
       animation: ascendAnimation,
       builder: (BuildContext context, Widget child) {
-        print(ascendAnimation.value);
         return buildNeumorphismSymbol(
           elementElevation: ascendAnimation.value,
-          clipPath: widget.clipPath,
+          clipPath: ascendAnimation.status == AnimationStatus.forward
+              ? (widget.clipPathFrom ?? widget.clipPathTo)
+              : widget.clipPathTo,
           context: context,
         );
       },

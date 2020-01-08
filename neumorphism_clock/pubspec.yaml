@@ -14,6 +14,8 @@ dependencies:
   neumorphism:
     path: ../../neumorphism
   text_to_path_maker: ^0.5.7
+  rxdart: ^0.23.1
+
 
 dev_dependencies:
   flutter_test:
