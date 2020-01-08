@@ -46,11 +46,13 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
   DateTime _dateTime = DateTime.now();
   Timer _timer;
   StreamController<ClockCondition> clockConditionStreamController;
+  Stream<ClockCondition> clockConditionStream;
 
   @override
   void initState() {
     super.initState();
     clockConditionStreamController = StreamController();
+    clockConditionStream = clockConditionStreamController.stream.asBroadcastStream();
     widget.model.addListener(_updateModel);
     _updateTime();
     _updateModel();
@@ -109,11 +111,16 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).brightness == Brightness.light ? _lightTheme : _darkTheme;
+    final colors = Theme
+        .of(context)
+        .brightness == Brightness.light ? _lightTheme : _darkTheme;
     final hour = DateFormat(widget.model.is24HourFormat ? 'HH' : 'hh').format(_dateTime);
     final minute = DateFormat('mm').format(_dateTime);
 
-    final fontSize = MediaQuery.of(context).size.width / 3.5;
+    final fontSize = MediaQuery
+        .of(context)
+        .size
+        .width / 3.5;
     final offset = -fontSize / 7;
     final defaultStyle = TextStyle(
       color: colors[_Element.text],
@@ -128,8 +135,10 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
       ],
     );
     return Container(
-        color: NeumorphismTheme.of(context).surfaceColor,
-        child: ClockPad(clockConditionStreamController.stream.asBroadcastStream().map((v)=>[v,v])));
+        color: NeumorphismTheme
+            .of(context)
+            .surfaceColor,
+        child: ClockPad(clockConditionStream.map((v)=>[v, v])));
   }
 }
 
@@ -164,35 +173,39 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
                       child: buildAnimatedNeumorphism(snapshot.data[1].secondSymbol, snapshot.data[0].secondSymbol)),
                   clockCell(
                       child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Flexible(
-                        flex: 1,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Neumorphism(
-                            clipper: CircleClipper(),
-                            child: Container(
-                              height: 30,
-                              width: 30,
-                              color: NeumorphismTheme.of(context).surfaceColor,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Flexible(
+                            flex: 1,
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Neumorphism(
+                                clipper: CircleClipper(),
+                                child: Container(
+                                  height: 30,
+                                  width: 30,
+                                  color: NeumorphismTheme
+                                      .of(context)
+                                      .surfaceColor,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      Flexible(
-                        flex: 1,
-                        child: Neumorphism(
-                          clipper: CircleClipper(),
-                          child: Container(
-                            height: 30,
-                            width: 30,
-                            color: NeumorphismTheme.of(context).surfaceColor,
-                          ),
-                        ),
-                      )
-                    ],
-                  )),
+                          Flexible(
+                            flex: 1,
+                            child: Neumorphism(
+                              clipper: CircleClipper(),
+                              child: Container(
+                                height: 30,
+                                width: 30,
+                                color: NeumorphismTheme
+                                    .of(context)
+                                    .surfaceColor,
+                              ),
+                            ),
+                          )
+                        ],
+                      )),
                   clockCell(
                       child: buildAnimatedNeumorphism(snapshot.data[1].thirdSymbol, snapshot.data[0].thirdSymbol)),
                   clockCell(
@@ -220,7 +233,9 @@ Neumorphism buildNeumorphismSymbol({Path clipPath, final double elementElevation
     child: FractionallySizedBox(
       heightFactor: 0.5,
       child: Container(
-        color: NeumorphismTheme.of(context).surfaceColor,
+        color: NeumorphismTheme
+            .of(context)
+            .surfaceColor,
       ),
     ),
   );
