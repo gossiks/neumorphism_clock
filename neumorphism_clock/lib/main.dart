@@ -8,8 +8,10 @@ import 'package:digital_clock/neumorphism_clock.dart';
 import 'package:digital_clock/neumorphism_helper/theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_clock_helper/customizer.dart';
 import 'package:flutter_clock_helper/model.dart';
+import 'package:text_to_path_maker/text_to_path_maker.dart';
 
 void main() {
   // A temporary measure until Platform supports web and TargetPlatform supports
@@ -30,5 +32,23 @@ void main() {
   //
   // Your job is to edit [DigitalClock], or replace it with your
   // own clock widget. (Look in neumorphism_clock.dart for more details!)
-  runApp(ClockCustomizer((ClockModel model) => NeumorphismTheme(child: NeuomorphismClock(model))));
+  runApp(ClockCustomizer((ClockModel model) => NeumorphismTheme(
+          child: FutureBuilder<List<Path>>(
+        future: rootBundle.load("asset/Roboto-Bold.ttf").then((ByteData data) {
+          List<Path> numberPathList = List.generate(10, (index) => 48 + index)
+              .asMap()
+              .map((index, value) =>
+                  MapEntry(index, generatePathForCharacter(PMFontReader().parseTTFAsset(data), value)))
+              .values
+              .toList();
+          return numberPathList;
+        }).catchError(print),
+        builder: (BuildContext context, AsyncSnapshot<List<Path>> snapshot) {
+          if (snapshot.hasData) {
+            return NeumorphismClock(model, snapshot.data);
+          } else {
+            return Container();
+          }
+        },
+      ))));
 }
