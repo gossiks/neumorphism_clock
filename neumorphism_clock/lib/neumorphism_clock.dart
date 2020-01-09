@@ -176,11 +176,11 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
                           buildAnimatedFontNeumorphism(snapshot.data[1].secondSymbol, snapshot.data[0].secondSymbol)),
                   clockCell(
                       child: Padding(
-                        padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
-                        child: Column(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: <Widget>[
+                    padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: <Widget>[
                         Flexible(
                           child: Padding(
                             padding: const EdgeInsets.all(20.0),
@@ -199,12 +199,9 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
                             ),
                           ),
                         ),
-//                      AnimatedNeumorphism(
-//                        clipper: CircleClipper(),
-//                      )
-                    ],
-                  ),
-                      )),
+                      ],
+                    ),
+                  )),
                   clockCell(
                       child: buildAnimatedFontNeumorphism(snapshot.data[1].thirdSymbol, snapshot.data[0].thirdSymbol)),
                   clockCell(
@@ -225,7 +222,7 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
       child: AnimatedNeumorphism(
         clipPathTo: symbolTo,
         clipPathFrom: symbolFrom,
-        elementElevation: 3,
+        elementElevation: 4,
         clipper: customClipper,
         height: height,
       ),
@@ -239,7 +236,7 @@ Widget buildNeumorphismSymbol(
     {Path clipPath, final double elementElevation, CustomClipper clipper, double height = 100, BuildContext context}) {
   return Container(
     child: Neumorphism(
-      elementElevation: elementElevation ?? 5,
+      shift: elementElevation ?? 5,
       clipper: clipper ?? FontSymbolClipper(clipPath),
       child: Container(
         height: height,
@@ -277,8 +274,8 @@ class _AnimatedNeumorphismState extends State<AnimatedNeumorphism> with SingleTi
   void initState() {
     super.initState();
     s = AnimationController(vsync: this, duration: Duration(milliseconds: 4000));
-    ascendAnimation = Tween<double>(begin: widget.elementElevation, end: 0)
-        .animate(CurvedAnimation(parent: s, curve: Curves.bounceInOut));
+    ascendAnimation =
+        Tween<double>(begin: widget.elementElevation, end: 0).animate(CurvedAnimation(parent: s, curve: Curves.linear));
     startAnimation();
   }
 
