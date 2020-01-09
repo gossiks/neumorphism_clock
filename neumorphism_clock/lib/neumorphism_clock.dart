@@ -45,16 +45,23 @@ class NeumorphismClock extends StatefulWidget {
 class _NeumorphismClockState extends State<NeumorphismClock> {
   DateTime _dateTime = DateTime.now();
   Timer _timer;
+  Timer _timerSeconds;
   StreamController<ClockCondition> clockConditionStreamController;
   Stream<ClockCondition> clockConditionStream;
+
+  StreamController<SecondsCondition> secondsSecondsConditionController;
+  Stream<SecondsCondition> secondsConditionStream;
 
   @override
   void initState() {
     super.initState();
     clockConditionStreamController = StreamController();
     clockConditionStream = clockConditionStreamController.stream.asBroadcastStream();
+    secondsSecondsConditionController = StreamController();
+    secondsConditionStream = secondsSecondsConditionController.stream.asBroadcastStream();
     widget.model.addListener(_updateModel);
     _updateTime();
+    _updateSeconds();
     _updateModel();
   }
 
@@ -70,49 +77,46 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
   @override
   void dispose() {
     _timer?.cancel();
+    _timerSeconds?.cancel();
+    clockConditionStreamController.close();
+    secondsSecondsConditionController.close();
     widget.model.removeListener(_updateModel);
     widget.model.dispose();
     super.dispose();
   }
 
   void _updateModel() {
-    setState(() {
-      // Cause the clock to rebuild when the model changes.
-    });
+    setState(() {});
   }
 
   void _updateTime() {
     _dateTime = DateTime.now();
-//    _dateTime = DateTime.now();
-    // Update once per minute. If you want to update every second, use the
-    // following code.
-//    _timer = Timer(
-//      Duration(minutes: 1) - Duration(seconds: _dateTime.second) - Duration(milliseconds: _dateTime.millisecond),
-//      _updateTime,
-//    );
-    final hour = DateFormat(widget.model.is24HourFormat ? 'HH' : 'hh').format(_dateTime);
-    final minute = DateFormat('mm').format(_dateTime);
-    clockConditionStreamController.add(extractClockCondition(widget.digitPath, _dateTime));
-    // Update once per second, but make sure to do it at the beginning of each
-    // new second, so that the clock is accurate.
     _timer = Timer(
-      Duration(seconds: 7) - Duration(milliseconds: _dateTime.millisecond),
+      Duration(minutes: 1) - Duration(seconds: _dateTime.second) - Duration(milliseconds: _dateTime.millisecond),
       _updateTime,
+    );
+    clockConditionStreamController.add(extractClockCondition(widget.digitPath, _dateTime));
+  }
+
+  void _updateSeconds() {
+    var dateTime = DateTime.now();
+    secondsSecondsConditionController.add(extractSecondsCondition(widget.digitPath, dateTime));
+    _timerSeconds = Timer(
+      Duration(seconds: 1) - Duration(milliseconds: _dateTime.millisecond),
+      _updateSeconds,
     );
   }
 
+  SecondsCondition extractSecondsCondition(List<Path> pathList, DateTime dateTime) {
+    return SecondsCondition(pathList[(dateTime.second - dateTime.second % 10) ~/ 10], pathList[dateTime.second % 10]);
+  }
+
   ClockCondition extractClockCondition(List<Path> pathList, DateTime dateTime) {
-//    return ClockCondition(
-//      pathList[(dateTime.second - dateTime.second % 10) ~/ 10],
-//      pathList[dateTime.second % 10],
-//      pathList[(dateTime.second - dateTime.second % 10) ~/ 10],
-//      pathList[dateTime.second % 10],
-//    );
     return ClockCondition(
-      pathList[1],
-      pathList[8],
-      pathList[9],
-      pathList[0],
+      pathList[(dateTime.hour - dateTime.hour % 10) ~/ 10],
+      pathList[dateTime.hour % 10],
+      pathList[(dateTime.minute - dateTime.minute % 10) ~/ 10],
+      pathList[dateTime.minute % 10],
     );
   }
 
@@ -137,21 +141,29 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
       ],
     );
     ClockCondition initialClockCondition = extractClockCondition(widget.digitPath, _dateTime);
+    SecondsCondition initialSecondsCondition = extractSecondsCondition(widget.digitPath, _dateTime);
     return Container(
         color: NeumorphismTheme.of(context).surfaceColor,
-        child: ClockPad(clockConditionStream.scan(
-            (List<ClockCondition> accumulated, ClockCondition value, int index) => [accumulated[1], value],
-            [initialClockCondition, initialClockCondition])));
+        child: ClockPad(
+            clockConditionStream.scan(
+                (List<ClockCondition> accumulated, ClockCondition value, int index) => [accumulated[1], value],
+                [initialClockCondition, initialClockCondition]),
+            secondsConditionStream.scan(
+                (List<SecondsCondition> accumulated, SecondsCondition value, int index) => [accumulated[1], value],
+                [initialSecondsCondition, initialSecondsCondition])));
   }
+
+  List<T> accumulateTime<T>(List<T> accumulated, T value, int index) => [accumulated[1], value];
 }
 
 Path generatePathForCharacter(PMFont myFont, int character) =>
     myFont.generatePathForCharacter(character); // TODO move to hepler
 
 class ClockPad extends StatefulWidget {
-  Stream<List<ClockCondition>> clockConditionStream;
+  final Stream<List<ClockCondition>> clockConditionStream;
+  final Stream<List<SecondsCondition>> secondsConditionStream;
 
-  ClockPad(this.clockConditionStream);
+  ClockPad(this.clockConditionStream, this.secondsConditionStream);
 
   @override
   _ClockPadState createState() => _ClockPadState();
@@ -167,45 +179,83 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
             return Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  clockCell(
-                      child: buildAnimatedFontNeumorphism(snapshot.data[1].firstSymbol, snapshot.data[0].firstSymbol)),
-                  clockCell(
-                      child:
-                          buildAnimatedFontNeumorphism(snapshot.data[1].secondSymbol, snapshot.data[0].secondSymbol)),
-                  clockCell(
-                      child: Padding(
-                    padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.start,
+                  Flexible(
+                    flex: 10,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
-                        Flexible(
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: AnimatedNeumorphism(
-                              elementElevation: 3,
-                              clipper: CircleClipper(),
-                            ),
+                        clockCell(
+                            child: buildAnimatedFontNeumorphism(
+                                snapshot.data[1].firstSymbol, snapshot.data[0].firstSymbol)),
+                        clockCell(
+                            child: buildAnimatedFontNeumorphism(
+                                snapshot.data[1].secondSymbol, snapshot.data[0].secondSymbol)),
+                        clockCell(
+                            child: Padding(
+                          padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.max,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: <Widget>[
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: AnimatedNeumorphism(
+                                    elementElevation: 3,
+                                    clipper: CircleClipper(),
+                                  ),
+                                ),
+                              ),
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: AnimatedNeumorphism(
+                                    elementElevation: 3,
+                                    clipper: CircleClipper(),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        Flexible(
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: AnimatedNeumorphism(
-                              elementElevation: 3,
-                              clipper: CircleClipper(),
-                            ),
-                          ),
-                        ),
+                        )),
+                        clockCell(
+                            child: buildAnimatedFontNeumorphism(
+                                snapshot.data[1].thirdSymbol, snapshot.data[0].thirdSymbol)),
+                        clockCell(
+                            child: buildAnimatedFontNeumorphism(
+                                snapshot.data[1].forthSymbol, snapshot.data[0].forthSymbol)),
                       ],
                     ),
-                  )),
-                  clockCell(
-                      child: buildAnimatedFontNeumorphism(snapshot.data[1].thirdSymbol, snapshot.data[0].thirdSymbol)),
-                  clockCell(
-                      child: buildAnimatedFontNeumorphism(snapshot.data[1].forthSymbol, snapshot.data[0].forthSymbol)),
+                  ),
+                  Flexible(
+                    flex: 1,
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: FractionallySizedBox(
+                        heightFactor: 0.4,
+                        child: StreamBuilder<List<SecondsCondition>>(
+                            stream: widget.secondsConditionStream,
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: <Widget>[
+                                    clockCell(
+                                        child: buildAnimatedFontNeumorphism(
+                                            snapshot.data[1].firstSymbol, snapshot.data[0].firstSymbol)),
+                                    clockCell(
+                                        child: buildAnimatedFontNeumorphism(
+                                            snapshot.data[1].secondSymbol, snapshot.data[0].secondSymbol)),
+                                  ],
+                                );
+                              } else {
+                                return Container();
+                              }
+                            }),
+                      ),
+                    ),
+                  )
                 ],
               ),
             );
@@ -222,7 +272,7 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
       child: AnimatedNeumorphism(
         clipPathTo: symbolTo,
         clipPathFrom: symbolFrom,
-        elementElevation: 4,
+        elementElevation: 3,
         clipper: customClipper,
         height: height,
       ),
@@ -313,4 +363,10 @@ class ClockCondition {
   final Path firstSymbol, secondSymbol, thirdSymbol, forthSymbol;
 
   ClockCondition(this.firstSymbol, this.secondSymbol, this.thirdSymbol, this.forthSymbol);
+}
+
+class SecondsCondition {
+  final Path firstSymbol, secondSymbol;
+
+  SecondsCondition(this.firstSymbol, this.secondSymbol);
 }
