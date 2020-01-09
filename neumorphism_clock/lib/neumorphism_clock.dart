@@ -83,6 +83,7 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
 
   void _updateTime() {
     _dateTime = DateTime.now();
+//    _dateTime = DateTime.now();
     // Update once per minute. If you want to update every second, use the
     // following code.
 //    _timer = Timer(
@@ -95,32 +96,33 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
     // Update once per second, but make sure to do it at the beginning of each
     // new second, so that the clock is accurate.
     _timer = Timer(
-      Duration(seconds: 1) - Duration(milliseconds: _dateTime.millisecond),
+      Duration(seconds: 7) - Duration(milliseconds: _dateTime.millisecond),
       _updateTime,
     );
   }
 
   ClockCondition extractClockCondition(List<Path> pathList, DateTime dateTime) {
+//    return ClockCondition(
+//      pathList[(dateTime.second - dateTime.second % 10) ~/ 10],
+//      pathList[dateTime.second % 10],
+//      pathList[(dateTime.second - dateTime.second % 10) ~/ 10],
+//      pathList[dateTime.second % 10],
+//    );
     return ClockCondition(
-      pathList[(dateTime.second - dateTime.second % 10) ~/ 10],
-      pathList[dateTime.second % 10],
-      pathList[(dateTime.second - dateTime.second % 10) ~/ 10],
-      pathList[dateTime.second % 10],
+      pathList[1],
+      pathList[8],
+      pathList[9],
+      pathList[0],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme
-        .of(context)
-        .brightness == Brightness.light ? _lightTheme : _darkTheme;
+    final colors = Theme.of(context).brightness == Brightness.light ? _lightTheme : _darkTheme;
     final hour = DateFormat(widget.model.is24HourFormat ? 'HH' : 'hh').format(_dateTime);
     final minute = DateFormat('mm').format(_dateTime);
 
-    final fontSize = MediaQuery
-        .of(context)
-        .size
-        .width / 3.5;
+    final fontSize = MediaQuery.of(context).size.width / 3.5;
     final offset = -fontSize / 7;
     final defaultStyle = TextStyle(
       color: colors[_Element.text],
@@ -134,11 +136,12 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
         ),
       ],
     );
+    ClockCondition initialClockCondition = extractClockCondition(widget.digitPath, _dateTime);
     return Container(
-        color: NeumorphismTheme
-            .of(context)
-            .surfaceColor,
-        child: ClockPad(clockConditionStream.map((v)=>[v, v])));
+        color: NeumorphismTheme.of(context).surfaceColor,
+        child: ClockPad(clockConditionStream.scan(
+            (List<ClockCondition> accumulated, ClockCondition value, int index) => [accumulated[1], value],
+            [initialClockCondition, initialClockCondition])));
   }
 }
 
@@ -164,52 +167,48 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
             return Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   clockCell(
-                      child: buildAnimatedNeumorphism(snapshot.data[1].firstSymbol, snapshot.data[0].firstSymbol)),
+                      child: buildAnimatedFontNeumorphism(snapshot.data[1].firstSymbol, snapshot.data[0].firstSymbol)),
                   clockCell(
-                      child: buildAnimatedNeumorphism(snapshot.data[1].secondSymbol, snapshot.data[0].secondSymbol)),
+                      child:
+                          buildAnimatedFontNeumorphism(snapshot.data[1].secondSymbol, snapshot.data[0].secondSymbol)),
                   clockCell(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          Flexible(
-                            flex: 1,
-                            child: Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: Neumorphism(
-                                clipper: CircleClipper(),
-                                child: Container(
-                                  height: 30,
-                                  width: 30,
-                                  color: NeumorphismTheme
-                                      .of(context)
-                                      .surfaceColor,
-                                ),
-                              ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
+                        child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: <Widget>[
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: AnimatedNeumorphism(
+                              elementElevation: 3,
+                              clipper: CircleClipper(),
                             ),
                           ),
-                          Flexible(
-                            flex: 1,
-                            child: Neumorphism(
+                        ),
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: AnimatedNeumorphism(
+                              elementElevation: 3,
                               clipper: CircleClipper(),
-                              child: Container(
-                                height: 30,
-                                width: 30,
-                                color: NeumorphismTheme
-                                    .of(context)
-                                    .surfaceColor,
-                              ),
                             ),
-                          )
-                        ],
+                          ),
+                        ),
+//                      AnimatedNeumorphism(
+//                        clipper: CircleClipper(),
+//                      )
+                    ],
+                  ),
                       )),
                   clockCell(
-                      child: buildAnimatedNeumorphism(snapshot.data[1].thirdSymbol, snapshot.data[0].thirdSymbol)),
+                      child: buildAnimatedFontNeumorphism(snapshot.data[1].thirdSymbol, snapshot.data[0].thirdSymbol)),
                   clockCell(
-                      child: buildAnimatedNeumorphism(snapshot.data[1].forthSymbol, snapshot.data[0].forthSymbol)),
+                      child: buildAnimatedFontNeumorphism(snapshot.data[1].forthSymbol, snapshot.data[0].forthSymbol)),
                 ],
               ),
             );
@@ -219,40 +218,57 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
         });
   }
 
-  AnimatedNeumorphismUp buildAnimatedNeumorphism(Path symbolTo, Path symbolFrom) {
-    return AnimatedNeumorphismUp(clipPathTo: symbolTo, clipPathFrom: symbolFrom, elementElevation: 3);
+  Widget buildAnimatedFontNeumorphism(Path symbolTo, Path symbolFrom,
+      {CustomClipper<Path> customClipper, double height}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 40.0),
+      child: AnimatedNeumorphism(
+        clipPathTo: symbolTo,
+        clipPathFrom: symbolFrom,
+        elementElevation: 3,
+        clipper: customClipper,
+        height: height,
+      ),
+    );
   }
 
   Widget clockCell({Widget child, int flex = 2}) => Flexible(flex: flex, child: child);
 }
 
-Neumorphism buildNeumorphismSymbol({Path clipPath, final double elementElevation = 5, BuildContext context}) {
-  return Neumorphism(
-    elementElevation: elementElevation,
-    clipper: FontSymbolClipper(clipPath),
-    child: FractionallySizedBox(
-      heightFactor: 0.5,
+Widget buildNeumorphismSymbol(
+    {Path clipPath, final double elementElevation, CustomClipper clipper, double height = 100, BuildContext context}) {
+  return Container(
+    child: Neumorphism(
+      elementElevation: elementElevation ?? 5,
+      clipper: clipper ?? FontSymbolClipper(clipPath),
       child: Container(
-        color: NeumorphismTheme
-            .of(context)
-            .surfaceColor,
+        height: height,
+        color: NeumorphismTheme.of(context).surfaceColor,
       ),
     ),
   );
 }
 
-class AnimatedNeumorphismUp extends StatefulWidget {
+class AnimatedNeumorphism extends StatefulWidget {
   final Path clipPathTo, clipPathFrom;
   final double elementElevation;
+  final CustomClipper<Path> clipper;
+  final double height;
 
-  AnimatedNeumorphismUp({Key key, @required this.clipPathTo, @required this.clipPathFrom, this.elementElevation = 10})
+  AnimatedNeumorphism(
+      {Key key,
+      @required this.clipPathTo,
+      @required this.clipPathFrom,
+      this.elementElevation = 10,
+      this.height,
+      this.clipper})
       : super(key: key = GlobalKey());
 
   @override
-  _AnimatedNeumorphismUpState createState() => _AnimatedNeumorphismUpState();
+  _AnimatedNeumorphismState createState() => _AnimatedNeumorphismState();
 }
 
-class _AnimatedNeumorphismUpState extends State<AnimatedNeumorphismUp> with SingleTickerProviderStateMixin {
+class _AnimatedNeumorphismState extends State<AnimatedNeumorphism> with SingleTickerProviderStateMixin {
   Animation<double> ascendAnimation, descendAnimation;
 
   AnimationController s;
@@ -260,7 +276,7 @@ class _AnimatedNeumorphismUpState extends State<AnimatedNeumorphismUp> with Sing
   @override
   void initState() {
     super.initState();
-    s = AnimationController(vsync: this, duration: Duration(milliseconds: 990));
+    s = AnimationController(vsync: this, duration: Duration(milliseconds: 4000));
     ascendAnimation = Tween<double>(begin: widget.elementElevation, end: 0)
         .animate(CurvedAnimation(parent: s, curve: Curves.bounceInOut));
     startAnimation();
@@ -287,6 +303,8 @@ class _AnimatedNeumorphismUpState extends State<AnimatedNeumorphismUp> with Sing
           clipPath: ascendAnimation.status == AnimationStatus.forward
               ? (widget.clipPathFrom ?? widget.clipPathTo)
               : widget.clipPathTo,
+          clipper: widget.clipper,
+          height: widget.height,
           context: context,
         );
       },

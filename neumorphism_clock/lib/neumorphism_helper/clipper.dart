@@ -4,16 +4,16 @@ import 'package:flutter/rendering.dart';
 import 'package:text_to_path_maker/text_to_path_maker.dart';
 
 class FontSymbolClipper extends CustomClipper<Path> {
-  Path clipPath;
+  final Path clipPath;
 
-  FontSymbolClipper(this.clipPath);
+  const FontSymbolClipper(this.clipPath);
 
   @override
   Path getClip(Size size) {
     double shrinkWidth = 0.8 * size.width / clipPath.getBounds().width;
     double shrinkHeight = 0.8 * size.height / clipPath.getBounds().height;
-    double shrink = min(shrinkHeight, shrinkWidth);
-    return PMTransform.moveAndScale(clipPath, 0.0, size.height, shrink, shrink);
+    return PMTransform.moveAndScale(clipPath,
+        0.0, size.height*0.99, shrinkWidth, shrinkHeight);
   }
 
   @override
@@ -27,6 +27,8 @@ class FontSymbolClipper extends CustomClipper<Path> {
 }
 
 class CircleClipper extends CustomClipper<Path> {
+  const CircleClipper();
+
   @override
   Path getClip(Size size) {
     return new Path()
