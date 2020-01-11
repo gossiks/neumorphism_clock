@@ -63,6 +63,7 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
     _updateTime();
     _updateSeconds();
     _updateModel();
+
   }
 
   @override
@@ -86,7 +87,8 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
   }
 
   void _updateModel() {
-    setState(() {});
+    _updateTime();
+    _updateSeconds();
   }
 
   void _updateTime() {
@@ -95,26 +97,32 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
       Duration(minutes: 1) - Duration(seconds: _dateTime.second) - Duration(milliseconds: _dateTime.millisecond),
       _updateTime,
     );
+
     clockConditionStreamController.add(extractClockCondition(widget.digitPath, _dateTime));
   }
 
   void _updateSeconds() {
     var dateTime = DateTime.now();
-    secondsSecondsConditionController.add(extractSecondsCondition(widget.digitPath, dateTime));
+    _timerSeconds?.cancel();
     _timerSeconds = Timer(
       Duration(seconds: 1) - Duration(milliseconds: _dateTime.millisecond),
       _updateSeconds,
     );
+    secondsSecondsConditionController.add(extractSecondsCondition(widget.digitPath, dateTime));
   }
 
   SecondsCondition extractSecondsCondition(List<Path> pathList, DateTime dateTime) {
+    print(dateTime.second.toString()+ " - " + ((dateTime.second - dateTime.second % 10) ~/ 10).toString() + " - " + (dateTime.second % 10).toString());
     return SecondsCondition(pathList[(dateTime.second - dateTime.second % 10) ~/ 10], pathList[dateTime.second % 10]);
   }
 
   ClockCondition extractClockCondition(List<Path> pathList, DateTime dateTime) {
+//    final hour = DateFormat(widget.model.is24HourFormat ? 'HH' : 'hh').format(_dateTime);
+//    final minute = DateFormat('mm').format(_dateTime);23 % 12
+    int hour = widget.model.is24HourFormat ? dateTime.hour : dateTime.hour % 12;
     return ClockCondition(
-      pathList[(dateTime.hour - dateTime.hour % 10) ~/ 10],
-      pathList[dateTime.hour % 10],
+      pathList[(hour - hour % 10) ~/ 10],
+      pathList[hour % 10],
       pathList[(dateTime.minute - dateTime.minute % 10) ~/ 10],
       pathList[dateTime.minute % 10],
     );
@@ -150,7 +158,7 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
                 [initialClockCondition, initialClockCondition]),
             secondsConditionStream.scan(
                 (List<SecondsCondition> accumulated, SecondsCondition value, int index) => [accumulated[1], value],
-                [initialSecondsCondition, initialSecondsCondition])));
+                [initialSecondsCondition, initialSecondsCondition]).distinct()));
   }
 
   List<T> accumulateTime<T>(List<T> accumulated, T value, int index) => [accumulated[1], value];
@@ -172,16 +180,16 @@ class ClockPad extends StatefulWidget {
 class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<ClockCondition>>(
-        stream: widget.clockConditionStream,
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: <Widget>[
-                  Flexible(
-                    flex: 10,
+    return Row(
+      children: <Widget>[
+        Flexible(
+          flex: 10,
+          child: StreamBuilder<List<ClockCondition>>(
+              stream: widget.clockConditionStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return Padding(
+                    padding: const EdgeInsets.all(12.0),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
@@ -227,46 +235,61 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
                                 snapshot.data[1].forthSymbol, snapshot.data[0].forthSymbol)),
                       ],
                     ),
-                  ),
-                  Flexible(
-                    flex: 1,
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: FractionallySizedBox(
-                        heightFactor: 0.4,
-                        child: StreamBuilder<List<SecondsCondition>>(
-                            stream: widget.secondsConditionStream,
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData) {
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: <Widget>[
-                                    clockCell(
-                                        child: buildAnimatedFontNeumorphism(
-                                            snapshot.data[1].firstSymbol, snapshot.data[0].firstSymbol)),
-                                    clockCell(
-                                        child: buildAnimatedFontNeumorphism(
-                                            snapshot.data[1].secondSymbol, snapshot.data[0].secondSymbol)),
-                                  ],
-                                );
-                              } else {
-                                return Container();
-                              }
-                            }),
-                      ),
-                    ),
-                  )
-                ],
+                  );
+                } else {
+                  return Container();
+                }
+              }),
+        ),
+        Flexible(
+          flex: 1,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 10.0, right: 10.0),
+              child: FractionallySizedBox(
+                heightFactor: 0.4,
+                child: StreamBuilder<List<SecondsCondition>>(
+                    stream: widget.secondsConditionStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: <Widget>[
+                            clockCell(
+                                child: Padding(
+                              padding: const EdgeInsets.only(right: 2.0),
+                              child: buildAnimatedFontNeumorphism(
+                                snapshot.data[1].firstSymbol,
+                                snapshot.data[0].firstSymbol,
+                                animationDuration: const Duration(milliseconds: 450),
+                              ),
+                            )),
+                            clockCell(
+                                child: Padding(
+                              padding: const EdgeInsets.only(left: 2.0),
+                              child: buildAnimatedFontNeumorphism(
+                                snapshot.data[1].secondSymbol,
+                                snapshot.data[0].secondSymbol,
+                                animationDuration: const Duration(milliseconds: 450),
+                              ),
+                            )),
+                          ],
+                        );
+                      } else {
+                        return Container();
+                      }
+                    }),
               ),
-            );
-          } else {
-            return Container();
-          }
-        });
+            ),
+          ),
+        )
+      ],
+    );
   }
 
   Widget buildAnimatedFontNeumorphism(Path symbolTo, Path symbolFrom,
-      {CustomClipper<Path> customClipper, double height}) {
+      {CustomClipper<Path> customClipper, double height, Duration animationDuration = const Duration(milliseconds: 4000)}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 40.0),
       child: AnimatedNeumorphism(
@@ -275,6 +298,7 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
         elementElevation: 3,
         clipper: customClipper,
         height: height,
+        animationDuration: animationDuration,
       ),
     );
   }
@@ -301,6 +325,7 @@ class AnimatedNeumorphism extends StatefulWidget {
   final double elementElevation;
   final CustomClipper<Path> clipper;
   final double height;
+  final Duration animationDuration;
 
   AnimatedNeumorphism(
       {Key key,
@@ -308,7 +333,8 @@ class AnimatedNeumorphism extends StatefulWidget {
       @required this.clipPathFrom,
       this.elementElevation = 10,
       this.height,
-      this.clipper})
+      this.clipper,
+      this.animationDuration = const Duration(milliseconds: 4000)})
       : super(key: key = GlobalKey());
 
   @override
@@ -318,25 +344,27 @@ class AnimatedNeumorphism extends StatefulWidget {
 class _AnimatedNeumorphismState extends State<AnimatedNeumorphism> with SingleTickerProviderStateMixin {
   Animation<double> ascendAnimation, descendAnimation;
 
-  AnimationController s;
+  AnimationController animationController;
 
   @override
   void initState() {
     super.initState();
-    s = AnimationController(vsync: this, duration: Duration(milliseconds: 4000));
-    ascendAnimation =
-        Tween<double>(begin: widget.elementElevation, end: 0).animate(CurvedAnimation(parent: s, curve: Curves.linear));
+    animationController = AnimationController(vsync: this, duration: widget.animationDuration);
+    ascendAnimation = Tween<double>(begin: widget.elementElevation, end: 0)
+        .animate(CurvedAnimation(parent: animationController, curve: Curves.linear));
     startAnimation();
   }
 
-  Future startAnimation() async {
-    await s.forward();
-    await s.reverse();
+   startAnimation() {
+//    animationController.reset();
+    animationController.forward().then((v){
+      animationController.reverse();
+    });
   }
 
   @override
   void dispose() {
-    s.dispose();
+    animationController.dispose();
     super.dispose();
   }
 
@@ -369,4 +397,19 @@ class SecondsCondition {
   final Path firstSymbol, secondSymbol;
 
   SecondsCondition(this.firstSymbol, this.secondSymbol);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is SecondsCondition &&
+              runtimeType == other.runtimeType &&
+              firstSymbol == other.firstSymbol &&
+              secondSymbol == other.secondSymbol;
+
+  @override
+  int get hashCode =>
+      firstSymbol.hashCode ^
+      secondSymbol.hashCode;
+
+
 }
