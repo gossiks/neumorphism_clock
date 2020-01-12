@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/rendering.dart';
 import 'package:text_to_path_maker/text_to_path_maker.dart';
 

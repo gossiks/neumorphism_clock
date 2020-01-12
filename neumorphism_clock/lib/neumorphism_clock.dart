@@ -4,11 +4,10 @@
 
 import 'package:digital_clock/neumorphism_helper/clipper.dart';
 import 'package:digital_clock/neumorphism_helper/theme.dart';
+import 'package:digital_clock/neumorphism_helper/wrap/neumorphism.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_clock_helper/model.dart';
-import 'package:neumorphism/neumorphism_lib.dart';
-import 'package:text_to_path_maker/text_to_path_maker.dart';
 import 'package:timer_builder/timer_builder.dart';
 
 class NeumorphismClock extends StatefulWidget {
@@ -77,9 +76,6 @@ ClockCondition extractClockCondition(List<Path> pathList, DateTime dateTime, boo
     pathList[dateTime.minute % 10],
   );
 }
-
-Path generatePathForCharacter(PMFont myFont, int character) =>
-    myFont.generatePathForCharacter(character); // TODO move to hepler
 
 class ClockPad extends StatefulWidget {
   final List<Path> digitPath;
@@ -187,7 +183,7 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
       child: AnimatedNeumorphism(
         clipPathTo: symbolTo,
         clipPathFrom: symbolFrom,
-        elementElevation: lightTheme ? 3 : 0.5,
+        elementElevation: lightTheme ? 3 : 1,
         clipper: customClipper,
         height: height,
         animationDuration: animationDuration,
@@ -223,8 +219,8 @@ class AnimatedNeumorphism extends StatefulWidget {
 
   AnimatedNeumorphism(
       {Key key,
-      @required this.clipPathTo,
-      @required this.clipPathFrom,
+      this.clipPathTo,
+      this.clipPathFrom,
       this.elementElevation = 10,
       this.height,
       this.clipper,
