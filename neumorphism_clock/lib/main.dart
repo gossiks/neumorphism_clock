@@ -4,12 +4,12 @@
 
 import 'dart:io';
 
-import 'package:digital_clock/neumorphism_clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_clock_helper/customizer.dart';
 import 'package:flutter_clock_helper/model.dart';
+import 'package:neumorphism_clock/neumorphism_clock.dart';
 import 'package:text_to_path_maker/text_to_path_maker.dart';
 
 import 'neumorphism_clock.dart';

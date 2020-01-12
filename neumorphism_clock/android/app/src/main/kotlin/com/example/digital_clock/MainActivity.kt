@@ -1,4 +1,4 @@
-package com.example.digital_clock
+package com.gossiks.neumorphism.clock
 
 import android.os.Bundle
 import io.flutter.app.FlutterActivity
