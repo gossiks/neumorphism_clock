@@ -33,23 +33,20 @@ class NeumorphismTheme extends InheritedWidget {
     @required Widget child,
   }) : this(
             surfaceColor: const Color(0xff212121),
-            shadowBottomPaint: Paint()..color = Color(0xff3A3E41)
-                .withAlpha(128),
-            shadowTopPaint: Paint()..color = Color(0xff9B9E9F)
-                .withAlpha(128),
+            shadowBottomPaint: Paint()..color = Color(0xff3A3E41).withAlpha(128),
+            shadowTopPaint: Paint()..color = Color(0xff9B9E9F).withAlpha(128),
             key: key,
             child: child);
-
-//  shadowBottomPaint = shadowBottomPaint ?? Paint()
-//  ..color = Color(0xffd1cdc7).withAlpha(128)
-//  ..maskFilter = MaskFilter.blur(BlurStyle.normal, Shadow.convertRadiusToSigma(0));
-//  shadowTopPaint = shadowTopPaint = shadowTopPaint ?? Paint()
-//  ..color = Colors.white.withAlpha(128)
-//  ..maskFilter = MaskFilter.blur(BlurStyle.normal, Shadow.convertRadiusToSigma(0));
-
+  
   @override
   bool updateShouldNotify(InheritedWidget oldWidget) {
-    return true; // TODO night mode
+    if (oldWidget is NeumorphismTheme &&
+        oldWidget.shadowBottomPaint == shadowBottomPaint &&
+        oldWidget.shadowTopPaint == shadowTopPaint &&
+        oldWidget.surfaceColor == surfaceColor) {
+      return false;
+    }
+    return true;
   }
 
   static NeumorphismTheme of(BuildContext context) => context.dependOnInheritedWidgetOfExactType();
