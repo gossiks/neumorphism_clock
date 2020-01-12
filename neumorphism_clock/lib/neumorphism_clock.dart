@@ -1,6 +1,3 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -99,37 +96,7 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
               )),
               clockCell(
                   child: buildAnimatedFontNeumorphism(context, currentTime.secondSymbol, previousTime.secondSymbol)),
-              TimerBuilder.periodic(const Duration(seconds: 2),
-                  builder: (context) => clockCell(
-                          child: Padding(
-                        padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: <Widget>[
-                            Flexible(
-                              child: Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: AnimatedNeumorphism(
-                                  animationDuration: const Duration(milliseconds: 700),
-                                  elementElevation: NeumorphismTheme.of(context).elementElevation,
-                                  clipper: CircleClipper(),
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              child: Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: AnimatedNeumorphism(
-                                  animationDuration: const Duration(milliseconds: 700),
-                                  elementElevation: NeumorphismTheme.of(context).elementElevation,
-                                  clipper: CircleClipper(),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ))),
+              buildDotListWidget(),
               clockCell(
                   child: Padding(
                 padding: const EdgeInsets.only(right: 4.0),
@@ -143,6 +110,31 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
       }),
     );
   }
+
+  Widget buildDotListWidget() => TimerBuilder.periodic(const Duration(seconds: 2),
+      builder: (context) => clockCell(
+              child: Padding(
+            padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                buildSingleDot(context),
+                buildSingleDot(context),
+              ],
+            ),
+          )));
+
+  static Flexible buildSingleDot(BuildContext context) => Flexible(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: AnimatedNeumorphism(
+            animationDuration: const Duration(milliseconds: 700),
+            elementElevation: NeumorphismTheme.of(context).elementElevation,
+            clipper: CircleClipper(),
+          ),
+        ),
+      );
 
   ClockCondition extractClockTimeCondition() =>
       extractClockCondition(widget.digitPath, DateTime.now(), widget.is24hourFormat);
