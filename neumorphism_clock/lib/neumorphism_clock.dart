@@ -11,24 +11,6 @@ import 'package:neumorphism/neumorphism_lib.dart';
 import 'package:text_to_path_maker/text_to_path_maker.dart';
 import 'package:timer_builder/timer_builder.dart';
 
-enum _Element {
-  background,
-  text,
-  shadow,
-}
-
-final _lightTheme = {
-  _Element.background: Colors.redAccent,
-  _Element.text: Colors.white,
-  _Element.shadow: Colors.black,
-};
-
-final _darkTheme = {
-  _Element.background: Colors.black,
-  _Element.text: Colors.white,
-  _Element.shadow: Colors.red,
-};
-
 class NeumorphismClock extends StatefulWidget {
   final ClockModel model;
   final List<Path> digitPath;
@@ -64,16 +46,14 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
   }
 
   void _updateModel() {
-    print("_updateModel");
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).brightness == Brightness.light ? _lightTheme : _darkTheme; //TODO
-    return Container(
-        color: NeumorphismTheme.of(context).surfaceColor,
-        child: ClockPad(widget.digitPath, widget.model.is24HourFormat));
+    bool lightTheme = Theme.of(context).brightness == Brightness.light;
+    Widget clockWidget = ClockPad(widget.digitPath, widget.model.is24HourFormat, lightTheme);
+    return lightTheme ? NeumorphismTheme.light(child: clockWidget) : NeumorphismTheme.dark(child: clockWidget);
   }
 }
 
@@ -104,11 +84,9 @@ Path generatePathForCharacter(PMFont myFont, int character) =>
 class ClockPad extends StatefulWidget {
   final List<Path> digitPath;
   final bool is24hourFormat;
+  final bool lightTheme;
 
-  ClockPad(
-    this.digitPath,
-    this.is24hourFormat,
-  );
+  ClockPad(this.digitPath, this.is24hourFormat, this.lightTheme);
 
   @override
   _ClockPadState createState() => _ClockPadState();
@@ -132,67 +110,84 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return TimerBuilder.periodic(Duration(minutes: 1), builder: (context) {
-      var currentTime = extractClockTimeCondition();
-      var previousTime = cachedClockCondition;
-      cachedClockCondition = currentTime;
-      print("periodic clock");
-      return Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            clockCell(child: buildAnimatedFontNeumorphism(currentTime.firstSymbol, previousTime.firstSymbol)),
-            clockCell(child: buildAnimatedFontNeumorphism(currentTime.secondSymbol, previousTime.secondSymbol)),
-            TimerBuilder.periodic(const Duration(seconds: 2),
-                builder: (context) => clockCell(
-                        child: Padding(
-                      padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: <Widget>[
-                          Flexible(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: AnimatedNeumorphism(
-                                animationDuration: const Duration(milliseconds: 450),
-                                elementElevation: 3,
-                                clipper: CircleClipper(),
+    return Container(
+      color: NeumorphismTheme.of(context).surfaceColor,
+      child: TimerBuilder.periodic(Duration(minutes: 1), builder: (context) {
+        var currentTime = extractClockTimeCondition();
+        var previousTime = cachedClockCondition;
+        cachedClockCondition = currentTime;
+        return Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              clockCell(
+                  child: Padding(
+                padding: const EdgeInsets.only(right: 4.0),
+                child: buildAnimatedFontNeumorphism(currentTime.firstSymbol, previousTime.firstSymbol,
+                    lightTheme: widget.lightTheme),
+              )),
+              clockCell(
+                  child: buildAnimatedFontNeumorphism(currentTime.secondSymbol, previousTime.secondSymbol,
+                      lightTheme: widget.lightTheme)),
+              TimerBuilder.periodic(const Duration(seconds: 2),
+                  builder: (context) => clockCell(
+                          child: Padding(
+                        padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: <Widget>[
+                            Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: AnimatedNeumorphism(
+                                  animationDuration: const Duration(milliseconds: 700),
+                                  elementElevation: widget.lightTheme ? 3 : 1,
+                                  clipper: CircleClipper(),
+                                ),
                               ),
                             ),
-                          ),
-                          Flexible(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: AnimatedNeumorphism(
-                                animationDuration: const Duration(milliseconds: 450),
-                                elementElevation: 3,
-                                clipper: CircleClipper(),
+                            Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: AnimatedNeumorphism(
+                                  animationDuration: const Duration(milliseconds: 700),
+                                  elementElevation: widget.lightTheme ? 3 : 1,
+                                  clipper: CircleClipper(),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ))),
-            clockCell(child: buildAnimatedFontNeumorphism(currentTime.thirdSymbol, previousTime.thirdSymbol)),
-            clockCell(child: buildAnimatedFontNeumorphism(currentTime.forthSymbol, previousTime.forthSymbol)),
-          ],
-        ),
-      );
-    });
+                          ],
+                        ),
+                      ))),
+              clockCell(
+                  child: Padding(
+                padding: const EdgeInsets.only(right: 4.0),
+                child: buildAnimatedFontNeumorphism(currentTime.thirdSymbol, previousTime.thirdSymbol,
+                    lightTheme: widget.lightTheme),
+              )),
+              clockCell(
+                  child: buildAnimatedFontNeumorphism(currentTime.forthSymbol, previousTime.forthSymbol,
+                      lightTheme: widget.lightTheme)),
+            ],
+          ),
+        );
+      }),
+    );
   }
 
   Widget buildAnimatedFontNeumorphism(Path symbolTo, Path symbolFrom,
       {CustomClipper<Path> customClipper,
       double height,
-      Duration animationDuration = const Duration(milliseconds: 1500)}) {
+      Duration animationDuration = const Duration(milliseconds: 1500),
+      bool lightTheme}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 40.0),
       child: AnimatedNeumorphism(
         clipPathTo: symbolTo,
         clipPathFrom: symbolFrom,
-        elementElevation: 3,
+        elementElevation: lightTheme ? 3 : 0.5,
         clipper: customClipper,
         height: height,
         animationDuration: animationDuration,
@@ -207,6 +202,8 @@ Widget buildNeumorphismSymbol(
     {Path clipPath, final double elementElevation, CustomClipper clipper, double height = 100, BuildContext context}) {
   return Container(
     child: Neumorphism(
+      shadowBottomPaint: NeumorphismTheme.of(context).shadowBottomPaint,
+      shadowTopPaint: NeumorphismTheme.of(context).shadowTopPaint,
       shift: elementElevation ?? 3,
       clipper: clipper ?? FontSymbolClipper(clipPath),
       child: Container(
@@ -242,12 +239,6 @@ class _AnimatedNeumorphismState extends State<AnimatedNeumorphism> with SingleTi
   Animation<double> ascendAnimation, descendAnimation;
 
   AnimationController animationController;
-
-  @override
-  void didUpdateWidget(AnimatedNeumorphism oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    print(oldWidget.toString());
-  }
 
   @override
   void initState() {

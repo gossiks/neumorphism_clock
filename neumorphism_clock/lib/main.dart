@@ -5,7 +5,6 @@
 import 'dart:io';
 
 import 'package:digital_clock/neumorphism_clock.dart';
-import 'package:digital_clock/neumorphism_helper/theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,8 +31,7 @@ void main() {
   //
   // Your job is to edit [DigitalClock], or replace it with your
   // own clock widget. (Look in neumorphism_clock.dart for more details!)
-  runApp(ClockCustomizer((ClockModel model) => NeumorphismTheme(
-          child: FutureBuilder<List<Path>>(
+  runApp(ClockCustomizer((ClockModel model) => FutureBuilder<List<Path>>(
         future: rootBundle.load("asset/Roboto-Bold.ttf").then((ByteData data) {
           List<Path> numberPathList = List.generate(10, (index) => 48 + index)
               .asMap()
@@ -50,5 +48,5 @@ void main() {
             return Container();
           }
         },
-      ))));
+      )));
 }
