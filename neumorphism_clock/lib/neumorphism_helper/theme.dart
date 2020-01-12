@@ -5,11 +5,13 @@ class NeumorphismTheme extends InheritedWidget {
   final Color surfaceColor;
   final Paint shadowBottomPaint;
   final Paint shadowTopPaint;
+  final double elementElevation;
 
   NeumorphismTheme({
     this.shadowBottomPaint,
     this.shadowTopPaint,
     this.surfaceColor,
+    this.elementElevation,
     Key key,
     @required Widget child,
   }) : super(key: key, child: child);
@@ -25,6 +27,7 @@ class NeumorphismTheme extends InheritedWidget {
             shadowTopPaint: Paint()
               ..color = Colors.white.withAlpha(128)
               ..maskFilter = MaskFilter.blur(BlurStyle.normal, Shadow.convertRadiusToSigma(0)),
+            elementElevation: 3,
             key: key,
             child: child);
 
@@ -35,6 +38,7 @@ class NeumorphismTheme extends InheritedWidget {
             surfaceColor: const Color(0xff212121),
             shadowBottomPaint: Paint()..color = Color(0xff3A3E41).withAlpha(128),
             shadowTopPaint: Paint()..color = Color(0xff9B9E9F).withAlpha(128),
+            elementElevation: 1,
             key: key,
             child: child);
 
@@ -43,7 +47,8 @@ class NeumorphismTheme extends InheritedWidget {
     if (oldWidget is NeumorphismTheme &&
         oldWidget.shadowBottomPaint == shadowBottomPaint &&
         oldWidget.shadowTopPaint == shadowTopPaint &&
-        oldWidget.surfaceColor == surfaceColor) {
+        oldWidget.surfaceColor == surfaceColor &&
+        oldWidget.elementElevation == elementElevation) {
       return false;
     }
     return true;

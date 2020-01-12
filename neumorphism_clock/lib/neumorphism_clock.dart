@@ -49,39 +49,18 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
 
   @override
   Widget build(BuildContext context) {
-    bool lightTheme = Theme.of(context).brightness == Brightness.light;
-    Widget clockWidget = ClockPad(widget.digitPath, widget.model.is24HourFormat, lightTheme);
-    return lightTheme ? NeumorphismTheme.light(child: clockWidget) : NeumorphismTheme.dark(child: clockWidget);
+    Widget clockWidget = ClockPad(widget.digitPath, widget.model.is24HourFormat);
+    return Theme.of(context).brightness == Brightness.light
+        ? NeumorphismTheme.light(child: clockWidget)
+        : NeumorphismTheme.dark(child: clockWidget);
   }
-}
-
-SecondsCondition extractSecondsCondition(List<Path> pathList, DateTime dateTime) {
-  print(dateTime.second.toString() +
-      " - " +
-      ((dateTime.second - dateTime.second % 10) ~/ 10).toString() +
-      " - " +
-      (dateTime.second % 10).toString());
-  return SecondsCondition(pathList[(dateTime.second - dateTime.second % 10) ~/ 10], pathList[dateTime.second % 10]);
-}
-
-ClockCondition extractClockCondition(List<Path> pathList, DateTime dateTime, bool is24HourFormat) {
-//    final hour = DateFormat(widget.model.is24HourFormat ? 'HH' : 'hh').format(_dateTime);
-//    final minute = DateFormat('mm').format(_dateTime);23 % 12
-  int hour = is24HourFormat ? dateTime.hour : dateTime.hour % 12;
-  return ClockCondition(
-    pathList[(hour - hour % 10) ~/ 10],
-    pathList[hour % 10],
-    pathList[(dateTime.minute - dateTime.minute % 10) ~/ 10],
-    pathList[dateTime.minute % 10],
-  );
 }
 
 class ClockPad extends StatefulWidget {
   final List<Path> digitPath;
   final bool is24hourFormat;
-  final bool lightTheme;
 
-  ClockPad(this.digitPath, this.is24hourFormat, this.lightTheme);
+  ClockPad(this.digitPath, this.is24hourFormat);
 
   @override
   _ClockPadState createState() => _ClockPadState();
@@ -97,11 +76,6 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
     cachedClockCondition = extractClockTimeCondition();
     cachedSecondsClockCondition = extractSecondsTimeCondition();
   }
-
-  ClockCondition extractClockTimeCondition() =>
-      extractClockCondition(widget.digitPath, DateTime.now(), widget.is24hourFormat);
-
-  SecondsCondition extractSecondsTimeCondition() => extractSecondsCondition(widget.digitPath, DateTime.now());
 
   @override
   Widget build(BuildContext context) {
@@ -119,12 +93,10 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
               clockCell(
                   child: Padding(
                 padding: const EdgeInsets.only(right: 4.0),
-                child: buildAnimatedFontNeumorphism(currentTime.firstSymbol, previousTime.firstSymbol,
-                    lightTheme: widget.lightTheme),
+                child: buildAnimatedFontNeumorphism(context, currentTime.firstSymbol, previousTime.firstSymbol),
               )),
               clockCell(
-                  child: buildAnimatedFontNeumorphism(currentTime.secondSymbol, previousTime.secondSymbol,
-                      lightTheme: widget.lightTheme)),
+                  child: buildAnimatedFontNeumorphism(context, currentTime.secondSymbol, previousTime.secondSymbol)),
               TimerBuilder.periodic(const Duration(seconds: 2),
                   builder: (context) => clockCell(
                           child: Padding(
@@ -138,7 +110,7 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
                                 padding: const EdgeInsets.all(20.0),
                                 child: AnimatedNeumorphism(
                                   animationDuration: const Duration(milliseconds: 700),
-                                  elementElevation: widget.lightTheme ? 3 : 1,
+                                  elementElevation: NeumorphismTheme.of(context).elementElevation,
                                   clipper: CircleClipper(),
                                 ),
                               ),
@@ -148,7 +120,7 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
                                 padding: const EdgeInsets.all(20.0),
                                 child: AnimatedNeumorphism(
                                   animationDuration: const Duration(milliseconds: 700),
-                                  elementElevation: widget.lightTheme ? 3 : 1,
+                                  elementElevation: NeumorphismTheme.of(context).elementElevation,
                                   clipper: CircleClipper(),
                                 ),
                               ),
@@ -159,12 +131,10 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
               clockCell(
                   child: Padding(
                 padding: const EdgeInsets.only(right: 4.0),
-                child: buildAnimatedFontNeumorphism(currentTime.thirdSymbol, previousTime.thirdSymbol,
-                    lightTheme: widget.lightTheme),
+                child: buildAnimatedFontNeumorphism(context, currentTime.thirdSymbol, previousTime.thirdSymbol),
               )),
               clockCell(
-                  child: buildAnimatedFontNeumorphism(currentTime.forthSymbol, previousTime.forthSymbol,
-                      lightTheme: widget.lightTheme)),
+                  child: buildAnimatedFontNeumorphism(context, currentTime.forthSymbol, previousTime.forthSymbol)),
             ],
           ),
         );
@@ -172,17 +142,34 @@ class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
     );
   }
 
-  Widget buildAnimatedFontNeumorphism(Path symbolTo, Path symbolFrom,
+  ClockCondition extractClockTimeCondition() =>
+      extractClockCondition(widget.digitPath, DateTime.now(), widget.is24hourFormat);
+
+  SecondsCondition extractSecondsTimeCondition() => extractSecondsCondition(widget.digitPath, DateTime.now());
+
+  static SecondsCondition extractSecondsCondition(List<Path> pathList, DateTime dateTime) =>
+      SecondsCondition(pathList[(dateTime.second - dateTime.second % 10) ~/ 10], pathList[dateTime.second % 10]);
+
+  static ClockCondition extractClockCondition(List<Path> pathList, DateTime dateTime, bool is24HourFormat) {
+    int hour = is24HourFormat ? dateTime.hour : dateTime.hour % 12;
+    return ClockCondition(
+      pathList[(hour - hour % 10) ~/ 10],
+      pathList[hour % 10],
+      pathList[(dateTime.minute - dateTime.minute % 10) ~/ 10],
+      pathList[dateTime.minute % 10],
+    );
+  }
+
+  static Widget buildAnimatedFontNeumorphism(BuildContext context, Path symbolTo, Path symbolFrom,
       {CustomClipper<Path> customClipper,
       double height,
-      Duration animationDuration = const Duration(milliseconds: 1500),
-      bool lightTheme}) {
+      Duration animationDuration = const Duration(milliseconds: 1500)}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 40.0),
       child: AnimatedNeumorphism(
         clipPathTo: symbolTo,
         clipPathFrom: symbolFrom,
-        elementElevation: lightTheme ? 3 : 1,
+        elementElevation: NeumorphismTheme.of(context).elementElevation,
         clipper: customClipper,
         height: height,
         animationDuration: animationDuration,
