@@ -25,7 +25,6 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
   void initState() {
     super.initState();
     widget.model.addListener(_updateModel);
-    _updateModel();
   }
 
   @override
