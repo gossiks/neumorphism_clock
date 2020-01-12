@@ -2,17 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
-
 import 'package:digital_clock/neumorphism_helper/clipper.dart';
 import 'package:digital_clock/neumorphism_helper/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_clock_helper/model.dart';
-import 'package:intl/intl.dart';
 import 'package:neumorphism/neumorphism_lib.dart';
-import 'package:rxdart/transformers.dart';
 import 'package:text_to_path_maker/text_to_path_maker.dart';
+import 'package:timer_builder/timer_builder.dart';
 
 enum _Element {
   background,
@@ -43,27 +40,11 @@ class NeumorphismClock extends StatefulWidget {
 }
 
 class _NeumorphismClockState extends State<NeumorphismClock> {
-  DateTime _dateTime = DateTime.now();
-  Timer _timer;
-  Timer _timerSeconds;
-  StreamController<ClockCondition> clockConditionStreamController;
-  Stream<ClockCondition> clockConditionStream;
-
-  StreamController<SecondsCondition> secondsSecondsConditionController;
-  Stream<SecondsCondition> secondsConditionStream;
-
   @override
   void initState() {
     super.initState();
-    clockConditionStreamController = StreamController();
-    clockConditionStream = clockConditionStreamController.stream.asBroadcastStream();
-    secondsSecondsConditionController = StreamController();
-    secondsConditionStream = secondsSecondsConditionController.stream.asBroadcastStream();
     widget.model.addListener(_updateModel);
-    _updateTime();
-    _updateSeconds();
     _updateModel();
-
   }
 
   @override
@@ -77,219 +58,135 @@ class _NeumorphismClockState extends State<NeumorphismClock> {
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _timerSeconds?.cancel();
-    clockConditionStreamController.close();
-    secondsSecondsConditionController.close();
     widget.model.removeListener(_updateModel);
     widget.model.dispose();
     super.dispose();
   }
 
   void _updateModel() {
-    _updateTime();
-    _updateSeconds();
-  }
-
-  void _updateTime() {
-    _dateTime = DateTime.now();
-    _timer = Timer(
-      Duration(minutes: 1) - Duration(seconds: _dateTime.second) - Duration(milliseconds: _dateTime.millisecond),
-      _updateTime,
-    );
-
-    clockConditionStreamController.add(extractClockCondition(widget.digitPath, _dateTime));
-  }
-
-  void _updateSeconds() {
-    var dateTime = DateTime.now();
-    _timerSeconds?.cancel();
-    _timerSeconds = Timer(
-      Duration(seconds: 1) - Duration(milliseconds: _dateTime.millisecond),
-      _updateSeconds,
-    );
-    secondsSecondsConditionController.add(extractSecondsCondition(widget.digitPath, dateTime));
-  }
-
-  SecondsCondition extractSecondsCondition(List<Path> pathList, DateTime dateTime) {
-    print(dateTime.second.toString()+ " - " + ((dateTime.second - dateTime.second % 10) ~/ 10).toString() + " - " + (dateTime.second % 10).toString());
-    return SecondsCondition(pathList[(dateTime.second - dateTime.second % 10) ~/ 10], pathList[dateTime.second % 10]);
-  }
-
-  ClockCondition extractClockCondition(List<Path> pathList, DateTime dateTime) {
-//    final hour = DateFormat(widget.model.is24HourFormat ? 'HH' : 'hh').format(_dateTime);
-//    final minute = DateFormat('mm').format(_dateTime);23 % 12
-    int hour = widget.model.is24HourFormat ? dateTime.hour : dateTime.hour % 12;
-    return ClockCondition(
-      pathList[(hour - hour % 10) ~/ 10],
-      pathList[hour % 10],
-      pathList[(dateTime.minute - dateTime.minute % 10) ~/ 10],
-      pathList[dateTime.minute % 10],
-    );
+    print("_updateModel");
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).brightness == Brightness.light ? _lightTheme : _darkTheme;
-    final hour = DateFormat(widget.model.is24HourFormat ? 'HH' : 'hh').format(_dateTime);
-    final minute = DateFormat('mm').format(_dateTime);
-
-    final fontSize = MediaQuery.of(context).size.width / 3.5;
-    final offset = -fontSize / 7;
-    final defaultStyle = TextStyle(
-      color: colors[_Element.text],
-      fontFamily: 'PressStart2P',
-      fontSize: fontSize,
-      shadows: [
-        Shadow(
-          blurRadius: 0,
-          color: colors[_Element.shadow],
-          offset: Offset(10, 0),
-        ),
-      ],
-    );
-    ClockCondition initialClockCondition = extractClockCondition(widget.digitPath, _dateTime);
-    SecondsCondition initialSecondsCondition = extractSecondsCondition(widget.digitPath, _dateTime);
+    final colors = Theme.of(context).brightness == Brightness.light ? _lightTheme : _darkTheme; //TODO
     return Container(
         color: NeumorphismTheme.of(context).surfaceColor,
-        child: ClockPad(
-            clockConditionStream.scan(
-                (List<ClockCondition> accumulated, ClockCondition value, int index) => [accumulated[1], value],
-                [initialClockCondition, initialClockCondition]),
-            secondsConditionStream.scan(
-                (List<SecondsCondition> accumulated, SecondsCondition value, int index) => [accumulated[1], value],
-                [initialSecondsCondition, initialSecondsCondition]).distinct()));
+        child: ClockPad(widget.digitPath, widget.model.is24HourFormat));
   }
+}
 
-  List<T> accumulateTime<T>(List<T> accumulated, T value, int index) => [accumulated[1], value];
+SecondsCondition extractSecondsCondition(List<Path> pathList, DateTime dateTime) {
+  print(dateTime.second.toString() +
+      " - " +
+      ((dateTime.second - dateTime.second % 10) ~/ 10).toString() +
+      " - " +
+      (dateTime.second % 10).toString());
+  return SecondsCondition(pathList[(dateTime.second - dateTime.second % 10) ~/ 10], pathList[dateTime.second % 10]);
+}
+
+ClockCondition extractClockCondition(List<Path> pathList, DateTime dateTime, bool is24HourFormat) {
+//    final hour = DateFormat(widget.model.is24HourFormat ? 'HH' : 'hh').format(_dateTime);
+//    final minute = DateFormat('mm').format(_dateTime);23 % 12
+  int hour = is24HourFormat ? dateTime.hour : dateTime.hour % 12;
+  return ClockCondition(
+    pathList[(hour - hour % 10) ~/ 10],
+    pathList[hour % 10],
+    pathList[(dateTime.minute - dateTime.minute % 10) ~/ 10],
+    pathList[dateTime.minute % 10],
+  );
 }
 
 Path generatePathForCharacter(PMFont myFont, int character) =>
     myFont.generatePathForCharacter(character); // TODO move to hepler
 
 class ClockPad extends StatefulWidget {
-  final Stream<List<ClockCondition>> clockConditionStream;
-  final Stream<List<SecondsCondition>> secondsConditionStream;
+  final List<Path> digitPath;
+  final bool is24hourFormat;
 
-  ClockPad(this.clockConditionStream, this.secondsConditionStream);
+  ClockPad(
+    this.digitPath,
+    this.is24hourFormat,
+  );
 
   @override
   _ClockPadState createState() => _ClockPadState();
 }
 
 class _ClockPadState extends State<ClockPad> with TickerProviderStateMixin {
+  ClockCondition cachedClockCondition;
+  SecondsCondition cachedSecondsClockCondition;
+
+  @override
+  void initState() {
+    super.initState();
+    cachedClockCondition = extractClockTimeCondition();
+    cachedSecondsClockCondition = extractSecondsTimeCondition();
+  }
+
+  ClockCondition extractClockTimeCondition() =>
+      extractClockCondition(widget.digitPath, DateTime.now(), widget.is24hourFormat);
+
+  SecondsCondition extractSecondsTimeCondition() => extractSecondsCondition(widget.digitPath, DateTime.now());
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Flexible(
-          flex: 10,
-          child: StreamBuilder<List<ClockCondition>>(
-              stream: widget.clockConditionStream,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: <Widget>[
-                        clockCell(
-                            child: buildAnimatedFontNeumorphism(
-                                snapshot.data[1].firstSymbol, snapshot.data[0].firstSymbol)),
-                        clockCell(
-                            child: buildAnimatedFontNeumorphism(
-                                snapshot.data[1].secondSymbol, snapshot.data[0].secondSymbol)),
-                        clockCell(
+    return TimerBuilder.periodic(Duration(minutes: 1), builder: (context) {
+      var currentTime = extractClockTimeCondition();
+      var previousTime = cachedClockCondition;
+      cachedClockCondition = currentTime;
+      print("periodic clock");
+      return Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            clockCell(child: buildAnimatedFontNeumorphism(currentTime.firstSymbol, previousTime.firstSymbol)),
+            clockCell(child: buildAnimatedFontNeumorphism(currentTime.secondSymbol, previousTime.secondSymbol)),
+            TimerBuilder.periodic(const Duration(seconds: 2),
+                builder: (context) => clockCell(
+                        child: Padding(
+                      padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: <Widget>[
+                          Flexible(
                             child: Padding(
-                          padding: const EdgeInsets.only(bottom: 20.0, top: 40.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: <Widget>[
-                              Flexible(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20.0),
-                                  child: AnimatedNeumorphism(
-                                    elementElevation: 3,
-                                    clipper: CircleClipper(),
-                                  ),
-                                ),
+                              padding: const EdgeInsets.all(20.0),
+                              child: AnimatedNeumorphism(
+                                animationDuration: const Duration(milliseconds: 450),
+                                elementElevation: 3,
+                                clipper: CircleClipper(),
                               ),
-                              Flexible(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20.0),
-                                  child: AnimatedNeumorphism(
-                                    elementElevation: 3,
-                                    clipper: CircleClipper(),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        )),
-                        clockCell(
-                            child: buildAnimatedFontNeumorphism(
-                                snapshot.data[1].thirdSymbol, snapshot.data[0].thirdSymbol)),
-                        clockCell(
-                            child: buildAnimatedFontNeumorphism(
-                                snapshot.data[1].forthSymbol, snapshot.data[0].forthSymbol)),
-                      ],
-                    ),
-                  );
-                } else {
-                  return Container();
-                }
-              }),
+                          Flexible(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: AnimatedNeumorphism(
+                                animationDuration: const Duration(milliseconds: 450),
+                                elementElevation: 3,
+                                clipper: CircleClipper(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ))),
+            clockCell(child: buildAnimatedFontNeumorphism(currentTime.thirdSymbol, previousTime.thirdSymbol)),
+            clockCell(child: buildAnimatedFontNeumorphism(currentTime.forthSymbol, previousTime.forthSymbol)),
+          ],
         ),
-        Flexible(
-          flex: 1,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: EdgeInsets.only(bottom: 10.0, right: 10.0),
-              child: FractionallySizedBox(
-                heightFactor: 0.4,
-                child: StreamBuilder<List<SecondsCondition>>(
-                    stream: widget.secondsConditionStream,
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: <Widget>[
-                            clockCell(
-                                child: Padding(
-                              padding: const EdgeInsets.only(right: 2.0),
-                              child: buildAnimatedFontNeumorphism(
-                                snapshot.data[1].firstSymbol,
-                                snapshot.data[0].firstSymbol,
-                                animationDuration: const Duration(milliseconds: 450),
-                              ),
-                            )),
-                            clockCell(
-                                child: Padding(
-                              padding: const EdgeInsets.only(left: 2.0),
-                              child: buildAnimatedFontNeumorphism(
-                                snapshot.data[1].secondSymbol,
-                                snapshot.data[0].secondSymbol,
-                                animationDuration: const Duration(milliseconds: 450),
-                              ),
-                            )),
-                          ],
-                        );
-                      } else {
-                        return Container();
-                      }
-                    }),
-              ),
-            ),
-          ),
-        )
-      ],
-    );
+      );
+    });
   }
 
   Widget buildAnimatedFontNeumorphism(Path symbolTo, Path symbolFrom,
-      {CustomClipper<Path> customClipper, double height, Duration animationDuration = const Duration(milliseconds: 4000)}) {
+      {CustomClipper<Path> customClipper,
+      double height,
+      Duration animationDuration = const Duration(milliseconds: 1500)}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 40.0),
       child: AnimatedNeumorphism(
@@ -310,7 +207,7 @@ Widget buildNeumorphismSymbol(
     {Path clipPath, final double elementElevation, CustomClipper clipper, double height = 100, BuildContext context}) {
   return Container(
     child: Neumorphism(
-      shift: elementElevation ?? 5,
+      shift: elementElevation ?? 3,
       clipper: clipper ?? FontSymbolClipper(clipPath),
       child: Container(
         height: height,
@@ -347,6 +244,12 @@ class _AnimatedNeumorphismState extends State<AnimatedNeumorphism> with SingleTi
   AnimationController animationController;
 
   @override
+  void didUpdateWidget(AnimatedNeumorphism oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    print(oldWidget.toString());
+  }
+
+  @override
   void initState() {
     super.initState();
     animationController = AnimationController(vsync: this, duration: widget.animationDuration);
@@ -355,9 +258,8 @@ class _AnimatedNeumorphismState extends State<AnimatedNeumorphism> with SingleTi
     startAnimation();
   }
 
-   startAnimation() {
-//    animationController.reset();
-    animationController.forward().then((v){
+  startAnimation() {
+    animationController.forward().then((v) {
       animationController.reverse();
     });
   }
@@ -391,6 +293,19 @@ class ClockCondition {
   final Path firstSymbol, secondSymbol, thirdSymbol, forthSymbol;
 
   ClockCondition(this.firstSymbol, this.secondSymbol, this.thirdSymbol, this.forthSymbol);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ClockCondition &&
+          runtimeType == other.runtimeType &&
+          firstSymbol == other.firstSymbol &&
+          secondSymbol == other.secondSymbol &&
+          thirdSymbol == other.thirdSymbol &&
+          forthSymbol == other.forthSymbol;
+
+  @override
+  int get hashCode => firstSymbol.hashCode ^ secondSymbol.hashCode ^ thirdSymbol.hashCode ^ forthSymbol.hashCode;
 }
 
 class SecondsCondition {
@@ -401,15 +316,11 @@ class SecondsCondition {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is SecondsCondition &&
-              runtimeType == other.runtimeType &&
-              firstSymbol == other.firstSymbol &&
-              secondSymbol == other.secondSymbol;
+      other is SecondsCondition &&
+          runtimeType == other.runtimeType &&
+          firstSymbol == other.firstSymbol &&
+          secondSymbol == other.secondSymbol;
 
   @override
-  int get hashCode =>
-      firstSymbol.hashCode ^
-      secondSymbol.hashCode;
-
-
+  int get hashCode => firstSymbol.hashCode ^ secondSymbol.hashCode;
 }
