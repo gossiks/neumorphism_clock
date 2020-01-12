@@ -37,7 +37,7 @@ class NeumorphismTheme extends InheritedWidget {
             shadowTopPaint: Paint()..color = Color(0xff9B9E9F).withAlpha(128),
             key: key,
             child: child);
-  
+
   @override
   bool updateShouldNotify(InheritedWidget oldWidget) {
     if (oldWidget is NeumorphismTheme &&
