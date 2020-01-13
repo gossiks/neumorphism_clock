@@ -10,8 +10,7 @@ class FontSymbolClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     double shrinkWidth = 0.8 * size.width / clipPath.getBounds().width;
     double shrinkHeight = 0.8 * size.height / clipPath.getBounds().height;
-    return PMTransform.moveAndScale(clipPath,
-        0.0, size.height*0.99, shrinkWidth, shrinkHeight);
+    return PMTransform.moveAndScale(clipPath, 0.0, size.height * 0.99, shrinkWidth, shrinkHeight);
   }
 
   @override
